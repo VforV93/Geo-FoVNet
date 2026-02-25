@@ -5,19 +5,19 @@ This is the main training and evaluation script for FOVNet models.
 
 Usage:
     # Train on SolidLetters dataset (trains then tests)
-    python modeling.py --mode train --dataset solidletters --graph_path graphs
+    python main.py --mode train --dataset solidletters --graph_path graphs
     
     # Test only with a checkpoint
-    python modeling.py --mode test --dataset solidletters --ckpt checkpoints/best.ckpt
+    python main.py --mode test --dataset solidletters --ckpt checkpoints/best.ckpt
     
     # Train with custom vision grid resolution
-    python modeling.py --mode train --dataset fusion360 --az 24 --el 12
+    python main.py --mode train --dataset fusion360 --az 24 --el 12
     
     # Train with specific features disabled
-    python modeling.py --mode train --dataset mfcad++ --no_uv --no_face_feat
+    python main.py --mode train --dataset mfcad++ --no_uv --no_face_feat
     
     # Learning curve experiment with 500 training samples
-    python modeling.py --mode train --dataset solidletters --lc 500
+    python main.py --mode train --dataset solidletters --lc 500
 """
 
 import argparse
@@ -39,7 +39,6 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
 from fovnet.FOVNet import FOVNetModule
-from uvnet.UVNet import UVNet
 
 class Config:
     """Configuration container (populated from argparse)."""
@@ -83,8 +82,6 @@ def get_dataset_class_and_paths(config):
         "traceparts": ("datasets.traceparts", "TraceParts", "data/traceparts"),
         "fusion360": ("datasets.fusion360", "Fusion360", "data/fusion360"),
         "mfcad++": ("datasets.mfcad", "MFCAD", "data/mfcad++"),
-        "bendfm": ("datasets.bendfm", "BenDFM", "../bendfm/data/bendfm"),
-        "wuyts": ("datasets.wuyts", "Wuyts", "../data/wuyts/bend_step_clean"),
     }
     
     dataset_key = config.DATASET.lower()
@@ -325,7 +322,7 @@ def parse_args():
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=["fusion360", "solidletters", "mfcad++", "traceparts", "bendfm", "wuyts"],
+        choices=["fusion360", "solidletters", "mfcad++", "traceparts"],
         default="solidletters",
         help="Dataset to use (default: solidletters)"
     )
@@ -443,13 +440,6 @@ def parse_args():
         action="store_true",
         help="Log to Weights & Biases"
     )
-    parser.add_argument(
-        "--model",
-        type=str,
-        choices=["fovnet", "uvnet"],
-        default="fovnet",
-        help="Model architecture to use: fovnet (default) or uvnet"
-    )
     
     return parser.parse_args()
 
@@ -487,10 +477,9 @@ def main():
     config.VISION_AZ = args.az
     config.VISION_EL = args.el
     config.WANDB = args.wandb
-    config.MODEL = args.model
     
     print("\n" + "="*80)
-    print(f"{config.MODEL.upper()} Training & Evaluation - Mode: {args.mode.upper()}")
+    print(f"FoVNet Training & Evaluation - Mode: {args.mode.upper()}")
     print("="*80)
     print(f"\nDataset Configuration:")
     print(f"  Dataset: {config.DATASET}")
@@ -519,12 +508,11 @@ def main():
         print(f"    Local UV (LRF-UV): {config.LOCAL_UV}")
     print(f"  Surface features: {config.USE_FACE_FEAT}")
     print(f"  Wandb logging: {config.WANDB}")
-    print(f"  Model: {config.MODEL}")
     print("=" * 80)
     
     setup_environment(config.SEED)
     config.SEGMENTATION = True if config.DATASET.lower() in ["fusion360", "mfcad++"] else False
-    config.REGRESSION = True if config.DATASET.lower() in ["wuyts"] else False
+    config.REGRESSION = False
     
     train_loader, val_loader, test_loader, test_loader_rotated, Dataset = get_dataloaders(config)
 
@@ -542,17 +530,12 @@ def main():
             use_ov=config.USE_OV,
             use_iv=config.USE_IV
         )
-    elif config.MODEL.lower() == "uvnet":
-        model = UVNet(num_classes=Dataset.num_classes(), segmentation=config.SEGMENTATION, lr=config.LEARNING_RATE)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     if config.TEST_ONLY:
         print(f"Loading checkpoint from {config.CKPT_PATH}...")
-        if config.MODEL.lower() == "fovnet":
-            model = FOVNetModule.load_from_checkpoint(config.CKPT_PATH, weights_only=True)
-        else:
-            model = UVNet.load_from_checkpoint(config.CKPT_PATH, weights_only=True)
+        model = FOVNetModule.load_from_checkpoint(config.CKPT_PATH, weights_only=True)
         model.to(device)
         
         test_model(model, test_loader, "test", config=config)
@@ -599,10 +582,7 @@ def main():
     best_ckpt_path = run_path / "best.ckpt"
     if os.path.exists(best_ckpt_path):
         print(f"\nLoading best model from {best_ckpt_path} for testing.")
-        if config.MODEL.lower() == "fovnet":
-            model = FOVNetModule.load_from_checkpoint(best_ckpt_path, weights_only=True)
-        else:
-            model = UVNet.load_from_checkpoint(best_ckpt_path, weights_only=True)
+        model = FOVNetModule.load_from_checkpoint(best_ckpt_path, weights_only=True)
         model.to(device)
         test_model(model, test_loader, "test", config=config)
         test_model(model, test_loader_rotated, "test_rotated", config=config)

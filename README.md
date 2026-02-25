@@ -1,29 +1,45 @@
-# FoV-Net: Rotation-Invariant CAD B-rep Learning via Field-of-View Ray Casting
+# FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting
+
+[![License: ](https://img.shields.io/badge/License--blue.svg)](LICENSE)
+[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange.svg)](https://pytorch.org/)
+
+Official code release for the CVPR 2025 paper **"FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"**.
+
 ## Overview
 
-FOVNet is a neural network architecture designed to learn from CAD boundary representation (B-Rep), fusing complementary descriptors to achieve rotation-invariance and capture structural context.
+FoV-Net is a neural network architecture for learning from CAD boundary representation (B-Rep) models. It achieves rotation-invariance by fusing three complementary per-face descriptors:
 
-- **Vision Grids**: Ray-casting based field-of-view grids (outer and inner hemispheres)
-- **LRF UV-Grids**: Parametric surface features from UV-space sampling, defined in local reference frames
-- **Face Features**: Raw geometric attributes (surface types + area)
+- **Vision Grids**: Ray-casting based field-of-view grids from outer and inner hemispheres around each face, encoded by a circular-padded CNN.
+- **LRF UV-Grids**: Parametric surface features sampled in UV-space and expressed in a local reference frame (LRF), encoded by a 2D CNN.
+- **Face Features**: Raw geometric attributes including surface type and area.
+
+The per-face features are fused and passed through a Graph Attention Network (GAT) operating on the face-adjacency graph of the B-Rep model, supporting both whole-model classification and per-face segmentation.
 
 ## Installation
 
 ### Setup
 
 ```bash
-# Create conda environment from this repository (run from CVPR_code/)
+# Clone the repository
+git clone https://github.com/maba-2001/fovnet.git
+cd fovnet
+
+# Create and activate the conda environment
 conda env create -f environment.yaml
 conda activate fovnet
+```
 
 ## Dataset Preparation
 
-FOVNet supports multiple B-Rep datasets:
+FoV-Net supports the following B-Rep datasets:
 
-- **SolidLetters**: 3D alphabet characters (26 classes)
-- **Fusion360**: CAD models with segmentation labels (8 classes)
-- **MFCAD++**: Mechanical parts segmentation (25 classes)
-- **TraceParts**: Industrial components (6 classes)
+| Dataset | Task | Classes | Source |
+|---------|------|---------|--------|
+| SolidLetters | Classification | 26 | [UV-Net](https://github.com/AutodeskAILab/UV-Net) |
+| Fusion360 | Segmentation | 8 | [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion-360-Gallery-Dataset) |
+| MFCAD++ | Segmentation | 25 | [AAGNet](https://github.com/whjdark/AAGNet) |
+| TraceParts | Classification | 6 | [UV-Net](https://github.com/AutodeskAILab/UV-Net) |
 
 ### Raw Data Structure
 
@@ -114,11 +130,16 @@ data/
 ...
 ```
 
-Each `.bin` file contains a DGL graph with:
-- Node features: UV-grids (10x10x7), vision grids (6×12×6), face features (7)
-- Graph structure: Face adjacency
+Each `.bin` file is a DGL graph with per-face node features:
 
-**Note**: The folder name `graphs` is configurable via the `--folder` argument in feature extraction and the `GRAPH_PATH` config in training scripts.
+| Feature key | Shape | Description |
+|-------------|-------|-------------|
+| `x` | `(N, 10, 10, 7)` | UV-grid (global coords) |
+| `x_local` | `(N, 10, 10, 7)` | UV-grid (LRF-aligned) |
+| `vision_grids` | `(N, el, az, 6)` | Hemisphere ray-casting grids |
+| `face_feat` | `(N, 7)` | Surface type one-hot + area |
+
+> **Note**: The subdirectory name `graphs` is configurable via `--folder` in preprocessing and `--graph_path` in training.
 
 ## Training
 
@@ -151,7 +172,7 @@ python main.py --mode train --dataset solidletters --no_uv --no_face_feat
 # Use global UV coordinates (vs LRF-UV)
 python main.py --mode train --dataset solidletters --global_uv
 
-# Enable rotation augmentation during training (mainly useful for UV-Net or AAGNet)
+# Enable random rotation augmentation during training
 python main.py --mode train --dataset solidletters --aug
 ```
 
@@ -164,42 +185,59 @@ python main.py --mode train --dataset solidletters --lc 500
 
 ## Model Configuration
 
-Key hyperparameters in `Config` class:
+Key hyperparameters (all configurable via CLI — run `python main.py --help` for the full list):
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `VISION_AZ` | Azimuth resolution for vision grids | 12 |
-| `VISION_EL` | Elevation resolution for vision grids | 6 |
-| `USE_OV` | Enable outer vision (upper hemisphere) | True |
-| `USE_IV` | Enable inner vision (lower hemisphere) | True |
-| `USE_UV` | Enable UV-grid features | True |
-| `USE_FACE_FEAT` | Enable raw face features | True |
-| `LOCAL_UV` | Use local vs global UV coordinates | True |
-| `BATCH_SIZE` | Training batch size | 64 |
-| `LEARNING_RATE` | Optimizer learning rate | 0.001 |
-| `PATIENCE` | Early stopping patience | 25 |
+| CLI flag | Description | Default |
+|----------|-------------|---------|
+| `--az` | Azimuth resolution for vision grids | 12 |
+| `--el` | Elevation resolution for vision grids | 6 |
+| `--no_ov` | Disable outer vision (upper hemisphere) | enabled |
+| `--no_iv` | Disable inner vision (lower hemisphere) | enabled |
+| `--no_uv` | Disable UV-grid features | enabled |
+| `--global_uv` | Use global UV coords instead of LRF-UV | local |
+| `--no_face_feat` | Disable surface type and area features | enabled |
+| `--batch_size` | Training batch size | 64 |
+| `--lr` | Optimizer learning rate | 0.001 |
+| `--patience` | Early stopping patience (epochs) | 25 |
 
 ## Project Structure
 
 ```
-CVPR_code/
-├── checkpoints/              # Model checkpoints and TensorBoard logs
-├── data/                     # Example data folder structure
-├── fovnet/                   # Model implementations and encoders
-│   ├── FOVNet.py
-│   └── encoders.py
-├── datasets/                 # Dataset wrappers and utilities
-├── preprocessing/           # Feature extraction (ray-casting, surface features)
-│   ├── geometry_features.py
-│   ├── preprocess.py
-│   └── ray_casting.py
-├── visuals/                  # Visualization helpers
-│   └── visualize_rays.py
+fovnet/
+├── fovnet/
+│   ├── FOVNet.py             # FOVNet model & PyTorch Lightning module
+│   └── encoders.py           # CNN and GAT encoder modules
+├── datasets/
+│   ├── base.py               # Base dataset class
+│   ├── solidletters.py
+│   ├── fusion360.py
+│   ├── mfcad.py
+│   ├── traceparts.py
+│   └── util.py
+├── preprocessing/
+│   ├── preprocess.py         # Feature extraction entry point
+│   ├── geometry_features.py  # UV-grids, face features, LRF computation
+│   └── ray_casting.py        # Hemisphere ray-casting
+├── visuals/
+│   └── visualize_rays.py     # Visualization helpers
 ├── main.py                   # Training and evaluation entry point
 ├── environment.yaml          # Conda environment specification
 └── LICENSE
 ```
 
+## Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@inproceedings{ballegeer2025fovnet,
+  title     = {FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting},
+  author    = {Ballegeer, Matteo and others},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2025}
+}
+```
+
 ## License
 
-This project is licensed under the  - see the LICENSE file for details.
+This project is licensed under the  — see the [LICENSE](LICENSE) file for details.
