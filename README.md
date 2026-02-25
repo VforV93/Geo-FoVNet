@@ -37,9 +37,9 @@ FoV-Net supports the following B-Rep datasets:
 | Dataset | Task | Classes | Source |
 |---------|------|---------|--------|
 | SolidLetters | Classification | 26 | [UV-Net](https://github.com/AutodeskAILab/UV-Net) |
-| Fusion360 | Segmentation | 8 | [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion-360-Gallery-Dataset) |
+| Fusion360 | Segmentation | 8 | [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion360GalleryDataset) |
 | MFCAD++ | Segmentation | 25 | [AAGNet](https://github.com/whjdark/AAGNet) |
-| TraceParts | Classification | 6 | [UV-Net](https://github.com/AutodeskAILab/UV-Net) |
+| TraceParts | Classification | 6 | [UV-Net](https://github.com/divanoLetto/3D_STEP_Classification) |
 
 ### Raw Data Structure
 
@@ -227,7 +227,7 @@ fovnet/
 
 ## Citation
 
-If you find this work useful, please cite:
+If you use this work, please cite:
 
 ```bibtex
 @inproceedings{ballegeer2025fovnet,
