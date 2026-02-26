@@ -4,7 +4,7 @@
 [![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-orange.svg)](https://pytorch.org/)
 
-Official code release for the CVPR 2025 paper **"FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"**.
+Official code release for the CVPR 2026 paper **"FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"**.
 
 ## Overview
 
@@ -234,7 +234,7 @@ If you use this work, please cite:
   title     = {FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting},
   author    = {Ballegeer, Matteo and others},
   booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year      = {2025}
+  year      = {2026}
 }
 ```
 
