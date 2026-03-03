@@ -6,7 +6,7 @@
 
 Official code release for the CVPR 2026 paper **"FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"**.
 
-<img src="docs/fovnet_architecture.png" alt="FoV-Net Architecture" style="max-width:100%;height:auto;display:block;margin:0 auto;" />
+<img src="docs/fovnet_architecture.jpg" alt="FoV-Net Architecture" style="max-width:100%;height:auto;display:block;margin:0 auto;" />
 
 ## Overview
 
