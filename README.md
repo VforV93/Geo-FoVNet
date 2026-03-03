@@ -6,6 +6,8 @@
 
 Official code release for the CVPR 2026 paper **"FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"**.
 
+[📊 View Model Architecture](docs/fovnet_architecture.pdf)
+
 ## Overview
 
 FoV-Net is a neural network architecture for learning from CAD boundary representation (B-Rep) models. It achieves rotation-invariance by fusing three complementary per-face descriptors:
