@@ -248,11 +248,12 @@ fovnet/
 If you use this work, please cite:
 
 ```bibtex
-@inproceedings{ballegeer2025fovnet,
-  title     = {FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting},
-  author    = {Ballegeer, Matteo and others},
-  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year      = {2026}
+@inproceedings{ballegeer2026fovnet,
+  author    = {Ballegeer, Matteo and Benoit, Dries F.},
+  title     = {FoV-Net: Rotation-Invariant CAD B-rep Learning via Field-of-View Ray Casting},
+  journal={arXiv preprint arXiv:2602.24084},
+  year      = {2026},
+  doi       = {10.48550/arXiv.2602.24084}
 }
 ```
 
