@@ -65,7 +65,18 @@ data/
 │   └── seg/  # Segmentation labels for Fusion360
 │       ├── model_001.seg
 │       └── ...
-...
+├── mfcad++/
+│   ├── train/
+│   ├── val/
+│   └── test/
+├── traceparts/
+│   ├── train/
+│   ├── val/
+│   └── test/
+└── bendfm/
+    ├── train/
+    ├── val/
+    └── test/
 ```
 
 ### Feature Extraction
@@ -86,6 +97,11 @@ python preprocessing/preprocess.py --dataset solidletters --folder graphs --az 2
 # Save rotated STEP files and produce rotated graph outputs (useful for test_rotated)
 python preprocessing/preprocess.py --dataset solidletters --folder graphs --all --rotate
 
+# Use mesh-based ray casting (faster, requires trimesh + pyembree)
+python preprocessing/preprocess.py --dataset solidletters --folder graphs --all --mesh_rays
+
+# Skip already-processed files
+python preprocessing/preprocess.py --dataset solidletters --folder graphs --all --skip_existing
 ```
 
 This will create a subdirectory with processed graph files:
@@ -134,9 +150,9 @@ Each `.bin` file is a DGL graph with per-face node features:
 
 | Feature key | Shape | Description |
 |-------------|-------|-------------|
-| `x` | `(N, 10, 10, 7)` | UV-grid (global coords) |
-| `x_local` | `(N, 10, 10, 7)` | UV-grid (LRF-aligned) |
-| `vision_grids` | `(N, el, az, 6)` | Hemisphere ray-casting grids |
+| `x` | `(N, 10, 10, 7)` | UV-grid in global coords (xyz, normal, mask) |
+| `x_local` | `(N, 10, 10, 7)` | UV-grid in LRF-aligned coords |
+| `vision_grids` | `(N, el, az, 6)` | Hemisphere ray-casting grids (ch 0-2: OV occ/dist/dot, ch 3-5: IV occ/dist/dot) |
 | `face_feat` | `(N, 7)` | Surface type one-hot + area |
 
 > **Note**: The subdirectory name `graphs` is configurable via `--folder` in preprocessing and `--graph_path` in training.
@@ -145,13 +161,13 @@ Each `.bin` file is a DGL graph with per-face node features:
 
 ### Basic Training
 
-Train/evaluate with `main.py` (PyTorch Lightning):
+Train and evaluate with `main.py` (PyTorch Lightning):
 
 ```bash
 # Train on SolidLetters dataset (uses graphs in data/solidletters/<split>/graphs)
 python main.py --mode train --dataset solidletters --graph_path graphs
 
-# Train on Fusion360 (segmentation)
+# Train on Fusion360 (per-face segmentation)
 python main.py --mode train --dataset fusion360 --graph_path graphs
 
 # Test only (load best checkpoint):
@@ -169,7 +185,7 @@ python main.py --mode train --dataset solidletters --az 12 --el 6
 # Ablate specific features (e.g., only vision features left)
 python main.py --mode train --dataset solidletters --no_uv --no_face_feat
 
-# Use global UV coordinates (vs LRF-UV)
+# Use global UV coordinates (instead of LRF-aligned)
 python main.py --mode train --dataset solidletters --global_uv
 
 # Enable random rotation augmentation during training
@@ -189,16 +205,18 @@ Key hyperparameters (all configurable via CLI — run `python main.py --help` fo
 
 | CLI flag | Description | Default |
 |----------|-------------|---------|
+| `--no_vision` | Disable all vision features (OV + IV) | vision ON |
 | `--az` | Azimuth resolution for vision grids | 12 |
 | `--el` | Elevation resolution for vision grids | 6 |
-| `--no_ov` | Disable outer vision (upper hemisphere) | enabled |
-| `--no_iv` | Disable inner vision (lower hemisphere) | enabled |
-| `--no_uv` | Disable UV-grid features | enabled |
-| `--global_uv` | Use global UV coords instead of LRF-UV | local |
-| `--no_face_feat` | Disable surface type and area features | enabled |
+| `--no_ov` | Disable outer vision (upper hemisphere) | OV ON |
+| `--no_iv` | Disable inner vision (lower hemisphere) | IV ON |
+| `--no_uv` | Disable UV-grid features | UV ON |
+| `--global_uv` | Use global UV coords instead of LRF-UV | local UV |
+| `--no_face_feat` | Disable surface type and area features | face features ON |
 | `--batch_size` | Training batch size | 64 |
 | `--lr` | Optimizer learning rate | 0.001 |
 | `--patience` | Early stopping patience (epochs) | 25 |
+| `--wandb` | Log metrics to Weights & Biases | off |
 
 ## Project Structure
 
@@ -208,19 +226,19 @@ fovnet/
 │   ├── FOVNet.py             # FOVNet model & PyTorch Lightning module
 │   └── encoders.py           # CNN and GAT encoder modules
 ├── datasets/
-│   ├── base.py               # Base dataset class
-│   ├── solidletters.py
-│   ├── fusion360.py
-│   ├── mfcad.py
-│   ├── traceparts.py
-│   └── util.py
+│   ├── base.py               # Base dataset class (lazy loading, transforms)
+│   ├── solidletters.py       # SolidLetters (26-class classification)
+│   ├── fusion360.py          # Fusion360 (8-class segmentation)
+│   ├── mfcad.py              # MFCAD++ (25-class segmentation)
+│   ├── traceparts.py         # TraceParts (6-class classification)
+│   └── util.py               # Bounding-box, rotation, file helpers
 ├── preprocessing/
-│   ├── preprocess.py         # Feature extraction entry point
-│   ├── geometry_features.py  # UV-grids, face features, LRF computation
-│   └── ray_casting.py        # Hemisphere ray-casting
+│   ├── preprocess.py         # STEP → DGL graph feature extraction
+│   ├── geometry_features.py  # UV-grids, face attributes, LRF computation
+│   └── ray_casting.py        # Hemisphere ray-casting (B-Rep & mesh)
 ├── visuals/
 │   └── visualize_rays.py     # Visualization helpers
-├── main.py                   # Training and evaluation entry point
+├── main.py                   # Training / evaluation entry point (Lightning)
 ├── environment.yaml          # Conda environment specification
 └── LICENSE
 ```
