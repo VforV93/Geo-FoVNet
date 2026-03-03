@@ -8,8 +8,6 @@ Official code release for the CVPR 2026 paper **"FoV-Net: Rotation-Invariant CAD
 
 <img src="docs/fovnet_architecture.png" alt="FoV-Net Architecture" style="max-width:100%;height:auto;display:block;margin:0 auto;" />
 
-[Download full-resolution image](docs/fovnet_architecture.png)
-
 ## Overview
 
 FoV-Net is a neural network architecture for learning from CAD boundary representation (B-Rep) models. It achieves rotation-invariance by fusing three complementary per-face descriptors:
