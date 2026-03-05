@@ -35,5 +35,6 @@ dependencies:
       - torchmetrics
       - tensorboard
       - wandb
+      - rtree
       - trimesh
 
