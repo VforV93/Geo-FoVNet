@@ -24,7 +24,7 @@ The per-face features are fused and passed through a Graph Attention Network (GA
 
 ```bash
 # Clone the repository
-git clone https://github.com/maba-2001/fovnet.git
+git clone https://github.com/UGent-CVAMO/fovnet.git
 cd fovnet
 
 # Create and activate the conda environment
