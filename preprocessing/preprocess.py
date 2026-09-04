@@ -7,6 +7,7 @@ import os
 import pathlib
 import warnings
 from dataclasses import dataclass, field
+from itertools import combinations
 from typing import Any, Optional
 
 import dgl
@@ -216,13 +217,53 @@ def compute_edge_uv_grids(edge, faces: list[Face], n_samples: int) -> np.ndarray
 
 
 # ── Graph building ──────────────────────────────────────────────────────────
+def _face_adjacency_lenient(shape):
+    """Face adjacency that keeps non-manifold / open-shell parts.
+
+    occwl.graph.face_adjacency requires every edge to be incident on at most two
+    faces. A few MFCAD++ solids have T-junctions (3–4 faces on one edge). For
+    those we still connect every pair of incident faces so the GAT can run.
+    """
+    import networkx as nx
+
+    graph = nx.DiGraph()
+    hash_to_idx = {}
+    for i, face in enumerate(shape.faces()):
+        graph.add_node(i, face=face)
+        hash_to_idx[face.__hash__()] = i
+    for edge in shape.edges():
+        try:
+            if not edge.has_curve():
+                continue
+            connected = list(shape.faces_from_edge(edge))
+        except Exception:
+            continue  # noqa: S112 — skip malformed B-rep edges
+        ids, seen = [], set()
+        for face in connected:
+            idx = hash_to_idx.get(face.__hash__())
+            if idx is None or idx in seen:
+                continue
+            seen.add(idx)
+            ids.append(idx)
+        if len(ids) < 2:
+            continue
+        for a, b in combinations(ids, 2):
+            graph.add_edge(a, b, edge=edge)
+            graph.add_edge(b, a, edge=edge)
+    return graph
+
+
 def build_graph(file_path, solid: Solid, cfg: ProcessingConfig) -> Optional[dgl.DGLGraph]:
     """Build a DGL face-adjacency graph from a CAD solid."""
     try:
         graph = face_adjacency(solid)
     except Exception as e:
-        print(f"face_adjacency error for {file_path}: {e}")
-        return None
+        try:
+            graph = _face_adjacency_lenient(solid)
+            print(f"face_adjacency fallback for {file_path.name}: {e}")
+        except Exception as e2:
+            print(f"face_adjacency error for {file_path}: {e2}")
+            return None
 
     solid_shape = solid.topods_shape()
     topo = TopologyUtils.TopologyExplorer(solid_shape, ignore_orientation=True)
@@ -348,8 +389,12 @@ def process_single_file(file_path, output_dir, cfg: ProcessingConfig) -> Optiona
         compound = Compound.load_from_step(file_path)
         solids = list(compound.solids())
         if not solids:
-            raise ValueError(f"No solids in {file_path}")
-        solid = solids[0] if len(solids) == 1 else Solid(compound.topods_shape(), allow_compound=True)
+            # Sheet-metal / open-shell parts have faces but no closed Solid.
+            solid = Solid(compound.topods_shape(), allow_compound=True)
+            if not list(solid.faces()):
+                raise ValueError(f"No solids or faces in {file_path}")
+        else:
+            solid = solids[0] if len(solids) == 1 else Solid(compound.topods_shape(), allow_compound=True)
         if cfg.scale_body:
             solid = scale_solid_to_unit_box(solid)
     except Exception as e:
