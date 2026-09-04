@@ -65,11 +65,13 @@ class BaseDataset(Dataset):
     def __getitem__(self, idx):
         try:
             sample = self.load_one_graph(self.file_paths[idx])
+            if sample is None:
+                raise ValueError("load_one_graph returned None")
         except Exception as e:  # noqa: BLE001
             # DataLoader worker boundary: a corrupt graph file must not kill
-            # the epoch, so fall back to an empty graph and keep going.
+            # the epoch. Collate drops None samples.
             print(f"[Worker] Failed to load {self.file_paths[idx]}: {e}")
-            return {"graph": dgl.graph([]), "filename": self.file_paths[idx].stem}
+            return None
 
         if self.center_and_scale:
             self._apply_center_and_scale(sample)
@@ -82,15 +84,40 @@ class BaseDataset(Dataset):
         return sample
 
     # ── collation / dataloader ──────────────────────────────────────────
+    @staticmethod
+    def _usable_samples(batch):
+        out = []
+        for s in batch:
+            if not s or "graph" not in s:
+                continue
+            if s["graph"].num_nodes() == 0:
+                continue
+            out.append(s)
+        if not out:
+            raise RuntimeError("collate received no valid graphs in this batch")
+        return out
+
     def _collate(self, batch):
+        batch = self._usable_samples(batch)
         return {
             "graph": dgl.batch([s["graph"] for s in batch]),
             "filename": [s["filename"] for s in batch],
         }
 
     def _collate_with_labels(self, batch):
-        c = self._collate(batch)
-        c["label"] = torch.cat([s["label"] for s in batch])
+        # Classification graphs may or may not carry unused ndata["y"]
+        # (depends on whether preprocessing ran with --seg). Mixed schemas
+        # make dgl.batch raise; drop y here — the class label is on "label".
+        batch = self._usable_samples(batch)
+        kept = []
+        for s in batch:
+            if "label" not in s:
+                continue
+            if "y" in s["graph"].ndata:
+                del s["graph"].ndata["y"]
+            kept.append(s)
+        c = self._collate(kept)
+        c["label"] = torch.cat([s["label"] for s in kept])
         return c
 
     def get_dataloader(self, batch_size=128, shuffle=True, num_workers=0):
