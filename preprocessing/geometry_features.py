@@ -31,10 +31,6 @@ except ImportError:
 
 ZERO = 1e-6
 
-# Graphs are stored fp16 by default (preprocess.py compress); positive values
-# below this floor flush to exactly 0 at rest.
-FP16_SMALLEST_SUBNORMAL = float(np.finfo(np.float16).smallest_subnormal)
-
 
 def _as_topods(entity) -> TopoDS_Shape:
     return entity.topods_shape() if hasattr(entity, "topods_shape") else entity
@@ -113,10 +109,6 @@ def extract_face_attributes(face, attr_list: list[str], points=None, solid_bbox_
                 if flat.shape[0] > 1:
                     lo, hi = (solid_bbox_diag * 1e-6)**2, solid_bbox_diag**2 * 10
                     if a < lo or a > hi: return 0.0
-            if 0.0 < a < FP16_SMALLEST_SUBNORMAL:
-                print(f"Warning: face area {a:.3e} is below the fp16 subnormal floor "
-                      f"({FP16_SMALLEST_SUBNORMAL:.3e}); it will be flushed to 0 in "
-                      "compressed graphs (use --no_compress to preserve it)")
             return a
         except Exception:
             return 0.0
