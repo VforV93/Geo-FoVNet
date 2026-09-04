@@ -1,6 +1,5 @@
 """Geometric feature extraction: face attributes, UV grids, vision grids, local frames."""
 
-from typing import List, Tuple
 
 import numpy as np
 from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
@@ -68,7 +67,7 @@ def extract_step_face_labels(file_path: str) -> list:
 
 
 # ── Face attributes ─────────────────────────────────────────────────────────
-def extract_face_attributes(face, attr_list: List[str], points=None, solid_bbox_diag=None) -> List[float]:
+def extract_face_attributes(face, attr_list: list[str], points=None, solid_bbox_diag=None) -> list[float]:
     """Extract geometric attributes (surface type, area, etc.) from a B-Rep face."""
     n_out = sum(3 if a == "FaceCentroidAttribute" else 1 for a in attr_list)
     if face is None or not attr_list:
@@ -171,7 +170,7 @@ def extract_face_vision_features(
 def compute_local_frame(
     face_shape, points=None, mask=None, uv_points=None,
     num_u=10, num_v=10, file_path=None, untrimmed_center=False,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute face-local frame (center, 3x3 axes, original center) aligned with UV."""
     if not isinstance(face_shape, TopoDS_Shape):
         face_shape = face_shape.topods_shape()

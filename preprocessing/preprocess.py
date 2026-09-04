@@ -7,7 +7,7 @@ import os
 import pathlib
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 import dgl
 import numpy as np
@@ -101,8 +101,8 @@ class ProcessingConfig:
     segmentation: bool = True
     compress: bool = False
     use_mesh_rays: bool = False
-    face_attr_list: List[str] = field(default_factory=lambda: list(DEFAULT_FACE_ATTRIBUTES))
-    edge_attr_list: List[str] = field(default_factory=lambda: list(DEFAULT_EDGE_ATTRIBUTES))
+    face_attr_list: list[str] = field(default_factory=lambda: list(DEFAULT_FACE_ATTRIBUTES))
+    edge_attr_list: list[str] = field(default_factory=lambda: list(DEFAULT_EDGE_ATTRIBUTES))
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ def _as_topods(entity):
     return entity.topods_shape() if hasattr(entity, "topods_shape") else entity
 
 
-def _edge_convexity(edge_topods, faces: List[Face]) -> Optional[EdgeConvexity]:
+def _edge_convexity(edge_topods, faces: list[Face]) -> Optional[EdgeConvexity]:
     try:
         ed = EdgeDataExtractor(Edge(edge_topods), faces, use_arclength_params=False)
         return ed.edge_convexity(ANGLE_TOLERANCE_RADS) if ed.good else None
@@ -131,7 +131,7 @@ def _edge_convexity(edge_topods, faces: List[Face]) -> Optional[EdgeConvexity]:
         return None
 
 # ── Edge attributes ─────────────────────────────────────────────────────────
-def extract_aag_edge_attributes(edge, attr_list: List[str], topo_exp) -> List[float]:
+def extract_aag_edge_attributes(edge, attr_list: list[str], topo_exp) -> list[float]:
     if edge is None or not attr_list or topo_exp is None:
         return [0.0] * len(attr_list)
 
@@ -202,7 +202,7 @@ def extract_aag_edge_attributes(edge, attr_list: List[str], topo_exp) -> List[fl
             vals.append(0.0)
     return vals
 
-def compute_edge_uv_grids(edge, faces: List[Face], n_samples: int) -> np.ndarray:
+def compute_edge_uv_grids(edge, faces: list[Face], n_samples: int) -> np.ndarray:
     """Sample edge curve: points, tangents, left/right face normals."""
     if n_samples <= 0:
         return np.zeros((0, 12), dtype=np.float32)
@@ -249,13 +249,13 @@ def build_graph(file_path, solid: Solid, cfg: ProcessingConfig) -> Optional[dgl.
     face_pts_local = np.zeros_like(face_pts) if cfg.include_uv_face else None
     vision = np.zeros((n_faces, el, az, 6), dtype=np.float32) if cfg.include_vision else None
     vision_feat = np.zeros((n_faces, 4), dtype=np.float32) if cfg.include_vision else None
-    face_attr_list: Optional[List] = [] if cfg.include_face_attr else None
-    face_labels: List[int] = []
+    face_attr_list: Optional[list] = [] if cfg.include_face_attr else None
+    face_labels: list[int] = []
     face_types, total_area = {}, 0.0
 
     # Pre-allocate edge arrays
     edge_uv = np.zeros((n_edges, cfg.curv_samples, 12), dtype=np.float32) if cfg.include_uv_edge else None
-    edge_attr_list: Optional[List] = [] if cfg.include_edge_attr else None
+    edge_attr_list: Optional[list] = [] if cfg.include_edge_attr else None
 
     # Process faces sequentially (file-level parallelism handles concurrency)
     for fi, nid in enumerate(node_ids):
@@ -413,7 +413,7 @@ def process_multiple_files(
     input_dir, output_dir, cfg: ProcessingConfig,
     num_processes=22, skip_existing=True, dataset="mfcad++",
     max_files=None,
-) -> Tuple[List[Any], List[str]]:
+) -> tuple[list[Any], list[str]]:
     """Process many STEP files with file-level parallelism."""
     files = _discover_step_files(input_dir, dataset)
     outdirs = [output_dir] * len(files)

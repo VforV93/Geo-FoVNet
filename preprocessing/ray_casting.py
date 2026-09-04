@@ -1,7 +1,7 @@
 """Ray casting: hemisphere sampling, B-Rep intersection, and mesh-based casting."""
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from OCC.Core.Bnd import Bnd_Box
@@ -65,7 +65,7 @@ def hemisphere_grid_sampling(axes: np.ndarray, num_elev=8, num_azim=16) -> np.nd
 def raycast_hemisphere(
     shape, center, axes, num_elev=8, num_azim=16,
     compute_dot=False, max_dist=None,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> tuple[np.ndarray, dict[str, Any]]:
     """Cast hemisphere rays from *center* against a B-Rep *shape*."""
     tol_inter, tol_ray = 1e-2, 1e-4
     max_d = max_dist or 1e6
@@ -145,7 +145,7 @@ def raycast_hemisphere(
 
 
 # ── Mesh tessellation ───────────────────────────────────────────────────────
-def _collect_faces(shape) -> List:
+def _collect_faces(shape) -> list:
     faces = []
     exp = TopExp_Explorer(shape, TopAbs_FACE)
     while exp.More():
@@ -247,7 +247,7 @@ class MeshRayCaster:
 def raycast_hemisphere_mesh(
     ray_caster: MeshRayCaster, center, axes,
     num_elev=8, num_azim=16, compute_dot=False, max_dist=None,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> tuple[np.ndarray, dict[str, Any]]:
     """Hemisphere ray casting via pre-built MeshRayCaster."""
     max_d = max_dist or 1e6
     eps = max(2.0 * ray_caster.linear_deflection, 1e-3)
