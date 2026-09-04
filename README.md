@@ -22,15 +22,47 @@ The per-face features are fused and passed through a Graph Attention Network (GA
 
 ### Setup
 
+The environment is managed with [pixi](https://pixi.sh), which resolves the conda
+and PyPI dependencies together and records exact versions in `pixi.lock`.
+
 ```bash
 # Clone the repository
 git clone https://github.com/UGent-CVAMO/fovnet.git
 cd fovnet
 
-# Create and activate the conda environment
+# Create the environment from the lockfile
+pixi install
+```
+
+Prefix commands with `pixi run` to execute them in the environment, or run
+`pixi shell` once to activate it for the session:
+
+```bash
+pixi run python main.py --help
+```
+
+The commands throughout this README are written as `python ...`; prepend
+`pixi run` to each unless you have activated the shell. Shorthands exist for the
+common entry points:
+
+```bash
+pixi run preprocess --dataset solidletters --folder graphs --all
+pixi run train --dataset solidletters --graph_path graphs
+pixi run test --dataset solidletters --ckpt checkpoints/best.ckpt --graph_path graphs
+```
+
+<details>
+<summary>Using conda instead</summary>
+
+`environment.yaml` is kept as a fallback. It is not lockfile-pinned, and on
+headless machines it may need a system OpenGL library for `pythonocc-core`:
+
+```bash
 conda env create -f environment.yaml
 conda activate fovnet
 ```
+
+</details>
 
 ## Dataset Preparation
 
@@ -99,7 +131,7 @@ python preprocessing/preprocess.py --dataset solidletters --folder graphs --az 2
 # Save rotated STEP files and produce rotated graph outputs (useful for test_rotated)
 python preprocessing/preprocess.py --dataset solidletters --folder graphs --all --rotate
 
-# Use mesh-based ray casting (faster, requires trimesh + pyembree)
+# Use mesh-based ray casting (faster, requires trimesh + embreex)
 python preprocessing/preprocess.py --dataset solidletters --folder graphs --all --mesh_rays
 
 # Skip already-processed files
@@ -241,7 +273,9 @@ fovnet/
 ├── visuals/
 │   └── visualize_rays.py     # Visualization helpers
 ├── main.py                   # Training / evaluation entry point (Lightning)
-├── environment.yaml          # Conda environment specification
+├── pixi.toml                 # Environment specification (pixi)
+├── pixi.lock                 # Pinned, reproducible dependency resolution
+├── environment.yaml          # Conda environment specification (fallback)
 └── LICENSE
 ```
 

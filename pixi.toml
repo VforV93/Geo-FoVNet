@@ -1,0 +1,57 @@
+[workspace]
+name = "fovnet"
+version = "1.0.0"
+description = "FoV-Net: Rotation-Invariant CAD B-Rep Learning via Field-of-View Ray Casting"
+channels = ["conda-forge", "pytorch", "nvidia", "lambouj"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.9.*"
+
+# PyTorch with CUDA 12.4
+pytorch = { version = "2.4.0.*", channel = "pytorch" }
+pytorch-cuda = { version = "12.4.*", channel = "pytorch" }
+
+# Scientific computing
+numpy = "1.23.5.*"
+scipy = "*"
+scikit-learn = "*"
+
+# Visualization
+matplotlib = "*"
+
+# CAD geometry (preprocessing & visualization)
+pythonocc-core = "7.5.1.*"
+occwl = { version = "*", channel = "lambouj" }
+# pythonocc-core links libGL.so.1 without declaring it; headless hosts have none.
+libgl = "*"
+
+# Utilities
+tqdm = "*"
+
+# Linting (configured in ruff.toml)
+ruff = "*"
+
+[pypi-options]
+# find-links alone would drop the default index and make every other
+# pypi-dependency unresolvable, so PyPI has to be named explicitly.
+index-url = "https://pypi.org/simple"
+find-links = [{ url = "https://data.dgl.ai/wheels/torch-2.4/cu121/repo.html" }]
+
+[pypi-dependencies]
+dgl = "==2.4.0+cu121"
+lightning = "==2.5.6"
+torchmetrics = "*"
+tensorboard = "*"
+wandb = "*"
+rtree = "*"
+trimesh = "*"
+# Embree 3 backend for trimesh's ray caster; supersedes pyembree in trimesh >= 4.
+embreex = "*"
+
+[tasks]
+preprocess = "python preprocessing/preprocess.py"
+train = "python main.py --mode train"
+test = "python main.py --mode test"
+lint = "ruff check ."
+lint-fix = "ruff check --fix ."

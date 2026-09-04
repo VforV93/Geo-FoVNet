@@ -26,7 +26,6 @@ dependencies:
 
   # Utilities
   - conda-forge::tqdm
-  - conda-forge::pyembree
   - pip
   - pip:
       - --find-links https://data.dgl.ai/wheels/torch-2.4/cu121/repo.html
@@ -37,4 +36,5 @@ dependencies:
       - wandb
       - rtree
       - trimesh
+      - embreex
 
