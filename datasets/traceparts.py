@@ -1,7 +1,9 @@
 """TraceParts: 6-class industrial component classification."""
 
 import string
+
 import torch
+
 from datasets.base import BaseDataset
 
 CHAR2LABEL = {c: i for i, c in enumerate(string.digits)}

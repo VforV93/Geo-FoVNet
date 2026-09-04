@@ -1,29 +1,34 @@
 """Geometric feature extraction: face attributes, UV grids, vision grids, local frames."""
 
-import numpy as np
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
+import numpy as np
 from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
 from OCC.Core.BRepGProp import brepgprop_SurfaceProperties
 from OCC.Core.BRepLProp import BRepLProp_SLProps
 from OCC.Core.GeomAbs import (
-    GeomAbs_BSplineSurface, GeomAbs_BezierSurface, GeomAbs_Cone,
-    GeomAbs_Cylinder, GeomAbs_Plane, GeomAbs_Sphere, GeomAbs_Torus,
+    GeomAbs_BezierSurface,
+    GeomAbs_BSplineSurface,
+    GeomAbs_Cone,
+    GeomAbs_Cylinder,
+    GeomAbs_Plane,
+    GeomAbs_Sphere,
+    GeomAbs_Torus,
 )
+from OCC.Core.gp import gp_Pnt2d
 from OCC.Core.GProp import GProp_GProps
 from OCC.Core.TopAbs import TopAbs_REVERSED
 from OCC.Core.TopoDS import TopoDS_Shape
-from OCC.Core.gp import gp_Pnt2d
-
 from occwl.face import Face
 from occwl.uvgrid import uvgrid
 
 try:
-    from preprocessing.ray_casting import raycast_hemisphere, MeshRayCaster, raycast_hemisphere_mesh
+    from preprocessing.ray_casting import raycast_hemisphere, raycast_hemisphere_mesh
 except ImportError:
-    import sys, pathlib
+    import pathlib
+    import sys
     sys.path.append(str(pathlib.Path(__file__).parent.parent))
-    from preprocessing.ray_casting import raycast_hemisphere, MeshRayCaster, raycast_hemisphere_mesh
+    from preprocessing.ray_casting import raycast_hemisphere, raycast_hemisphere_mesh
 
 ZERO = 1e-6
 

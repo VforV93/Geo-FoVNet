@@ -1,7 +1,9 @@
 """SolidLetters: 26-class 3D letter classification."""
 
 import string
+
 import torch
+
 from datasets.base import BaseDataset
 
 CHAR2LABEL = {c: i for i, c in enumerate(string.ascii_lowercase)}

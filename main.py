@@ -16,18 +16,17 @@ import os
 import random
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
-from tqdm import tqdm
-from pathlib import Path
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
-from sklearn.metrics import accuracy_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import accuracy_score, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-
+from tqdm import tqdm
 
 from fovnet import FOVNetModule
 

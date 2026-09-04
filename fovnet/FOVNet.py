@@ -5,11 +5,12 @@ parametrizations, and face geometric features for classification
 and per-face segmentation.
 """
 
+import lightning.pytorch as pl
 import torch
 import torch.nn.functional as F
-from torch import nn
-import lightning.pytorch as pl
 import torchmetrics
+from torch import nn
+
 import fovnet.encoders as enc
 
 

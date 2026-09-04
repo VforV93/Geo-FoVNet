@@ -1,7 +1,9 @@
 """BenDFM: 2-class sheet metal bending manufacturability."""
 
 import json
+
 import torch
+
 from datasets.base import BaseDataset
 
 

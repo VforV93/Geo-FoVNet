@@ -2,33 +2,29 @@
 Visualization script for ray casting
 """
 
-# Standard library
-import random
 import logging
-from matplotlib.colors import LinearSegmentedColormap
+import random
 
-# Third-party
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Wedge
+import numpy as np
 from matplotlib.cm import ScalarMappable
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.patches import Circle, Wedge
+from OCC.Core.AIS import AIS_Shape
 from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRepBndLib import brepbndlib
+from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeCone, BRepPrimAPI_MakeCylinder
+from OCC.Core.gp import gp_Ax2, gp_Dir, gp_Pnt, gp_Vec
+from OCC.Core.Graphic3d import Graphic3d_MaterialAspect, Graphic3d_NOM_PLASTIC
+from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
+from OCC.Display.SimpleGui import init_display
+from OCC.Extend.TopologyUtils import TopologyExplorer
+
+from preprocessing.geometry_features import compute_local_frame
+from preprocessing.ray_casting import load_step_file, raycast_hemisphere
 
 # Suppress matplotlib debug logging
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
-
-# OpenCASCADE imports
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Vec, gp_Ax2
-from OCC.Extend.TopologyUtils import TopologyExplorer
-from OCC.Display.SimpleGui import init_display
-from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeCylinder, BRepPrimAPI_MakeCone
-from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
-from OCC.Core.AIS import AIS_Shape
-from OCC.Core.Graphic3d import Graphic3d_MaterialAspect, Graphic3d_NOM_PLASTIC
-
-from preprocessing.ray_casting import raycast_hemisphere, load_step_file
-from preprocessing.geometry_features import compute_local_frame
 
 MATERIAL = Graphic3d_NOM_PLASTIC
 

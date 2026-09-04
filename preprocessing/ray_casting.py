@@ -1,29 +1,32 @@
 """Ray casting: hemisphere sampling, B-Rep intersection, and mesh-based casting."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRep import BRep_Tool
+from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
+from OCC.Core.BRepBndLib import brepbndlib
 from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
 from OCC.Core.GeomAPI import GeomAPI_ProjectPointOnSurf
 from OCC.Core.gp import gp_Dir, gp_Lin, gp_Pnt, gp_Vec
 from OCC.Core.IntCurvesFace import IntCurvesFace_ShapeIntersector
 from OCC.Core.STEPControl import STEPControl_Reader
-from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_FORWARD, TopAbs_REVERSED
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_REVERSED
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopLoc import TopLoc_Location
-from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.BRepBndLib import brepbndlib
 
 try:
     import trimesh
+    HAS_TRIMESH = True
+    # trimesh >= 4 substitutes a placeholder object for ray_pyembree when the
+    # Embree backend is missing, so the attribute exists either way and only
+    # raises on use. Probe for the class instead of the module.
     try:
-        _test = trimesh.ray.ray_pyembree
-        HAS_TRIMESH = HAS_PYEMBREE = True
-    except AttributeError:
-        HAS_TRIMESH, HAS_PYEMBREE = True, False
+        HAS_PYEMBREE = hasattr(trimesh.ray.ray_pyembree, "RayMeshIntersector")
+    except Exception:
+        HAS_PYEMBREE = False
 except ImportError:
     HAS_TRIMESH = HAS_PYEMBREE = False
 
@@ -191,7 +194,7 @@ class MeshRayCaster:
 
     def __init__(self, shape, linear_deflection=None, angular_deflection=0.5):
         if not HAS_TRIMESH:
-            raise ImportError("trimesh required for mesh rays (pip install trimesh pyembree)")
+            raise ImportError("trimesh required for mesh rays (pip install trimesh embreex)")
 
         bbox = Bnd_Box()
         brepbndlib.Add(shape, bbox)
@@ -206,7 +209,11 @@ class MeshRayCaster:
         self.mesh = trimesh.Trimesh(vertices=self.vertices, faces=self.triangles)
         try:
             self.intersector = trimesh.ray.ray_pyembree.RayMeshIntersector(self.mesh)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Embree unavailable (%s); falling back to the pure-Python ray "
+                "caster, which is orders of magnitude slower. Install embreex.", exc
+            )
             self.intersector = trimesh.ray.ray_triangle.RayMeshIntersector(self.mesh)
 
     def intersect_rays(self, origins, directions):

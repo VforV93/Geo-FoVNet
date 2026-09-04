@@ -2,9 +2,9 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
-from dgl.nn.pytorch.glob import MaxPooling
 from dgl.nn.pytorch import GATConv
+from dgl.nn.pytorch.glob import MaxPooling
+from torch import nn
 
 
 # ── Building blocks ─────────────────────────────────────────────────────────

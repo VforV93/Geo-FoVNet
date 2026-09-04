@@ -6,40 +6,41 @@ import multiprocessing
 import os
 import pathlib
 import warnings
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
 import dgl
 import numpy as np
 import torch
-from tqdm import tqdm
-
+from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.BRep import BRep_Tool
 from OCC.Core.BRepAdaptor import BRepAdaptor_Curve
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
 from OCC.Core.BRepGProp import brepgprop_LinearProperties
-from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.GeomAbs import GeomAbs_Circle, GeomAbs_Ellipse, GeomAbs_Line
+from OCC.Core.gp import gp_Ax1, gp_Dir, gp_Pnt, gp_Trsf
 from OCC.Core.GProp import GProp_GProps
 from OCC.Core.STEPControl import STEPControl_AsIs, STEPControl_Writer
-from OCC.Core.gp import gp_Ax1, gp_Dir, gp_Pnt, gp_Trsf
 from OCC.Extend import TopologyUtils
-
 from occwl.compound import Compound
 from occwl.edge import Edge
 from occwl.edge_data_extractor import EdgeConvexity, EdgeDataExtractor
 from occwl.face import Face
 from occwl.graph import face_adjacency
 from occwl.solid import Solid
+from tqdm import tqdm
 
 from geometry_features import (
-    process_single_face, scale_solid_to_unit_box, extract_step_face_labels,
+    extract_step_face_labels,
+    process_single_face,
+    scale_solid_to_unit_box,
 )
+
 try:
-    from ray_casting import MeshRayCaster, HAS_TRIMESH, HAS_PYEMBREE
+    from ray_casting import MeshRayCaster
 except ImportError:
-    from preprocessing.ray_casting import MeshRayCaster, HAS_TRIMESH, HAS_PYEMBREE
+    from preprocessing.ray_casting import MeshRayCaster
 
 # ── Global settings ─────────────────────────────────────────────────────────
 np.set_printoptions(precision=3)

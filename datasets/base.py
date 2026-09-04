@@ -6,7 +6,7 @@ from abc import abstractmethod
 import dgl
 import torch
 from dgl.data.utils import load_graphs
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from datasets import util
 
