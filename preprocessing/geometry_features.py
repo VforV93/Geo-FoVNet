@@ -61,7 +61,7 @@ def extract_step_face_labels(file_path: str) -> list:
             content = f.read()
         matches = re.findall(r"#\d+\s*=\s*ADVANCED_FACE\('([^']*)'\s*", content)
         return [int(m) for m in matches if m.strip().isdigit()]
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"Warning: label extraction failed for {file_path}: {e}")
         return []
 

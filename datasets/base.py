@@ -65,7 +65,9 @@ class BaseDataset(Dataset):
     def __getitem__(self, idx):
         try:
             sample = self.load_one_graph(self.file_paths[idx])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
+            # DataLoader worker boundary: a corrupt graph file must not kill
+            # the epoch, so fall back to an empty graph and keep going.
             print(f"[Worker] Failed to load {self.file_paths[idx]}: {e}")
             return {"graph": dgl.graph([]), "filename": self.file_paths[idx].stem}
 

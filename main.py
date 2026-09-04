@@ -97,11 +97,11 @@ def get_dataloaders(cfg):
 
     g = torch.Generator()
     g.manual_seed(cfg.SEED)
-    common = dict(
-        num_workers=cfg.NUM_WORKERS, worker_init_fn=_seed_worker, generator=g,
-        persistent_workers=True, pin_memory=True,
-        prefetch_factor=4 if cfg.NUM_WORKERS > 0 else None,
-    )
+    common = {
+        "num_workers": cfg.NUM_WORKERS, "worker_init_fn": _seed_worker, "generator": g,
+        "persistent_workers": True, "pin_memory": True,
+        "prefetch_factor": 4 if cfg.NUM_WORKERS > 0 else None,
+    }
     collate = train_ds._collate if cfg.SEGMENTATION else train_ds._collate_with_labels
 
     def loader(ds, shuffle=False):

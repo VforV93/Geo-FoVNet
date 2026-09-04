@@ -1,6 +1,7 @@
 """Ray casting: hemisphere sampling, B-Rep intersection, and mesh-based casting."""
 
 import logging
+from types import ModuleType
 from typing import Any
 
 import numpy as np
@@ -20,13 +21,10 @@ from OCC.Core.TopLoc import TopLoc_Location
 try:
     import trimesh
     HAS_TRIMESH = True
-    # trimesh >= 4 substitutes a placeholder object for ray_pyembree when the
-    # Embree backend is missing, so the attribute exists either way and only
-    # raises on use. Probe for the class instead of the module.
-    try:
-        HAS_PYEMBREE = hasattr(trimesh.ray.ray_pyembree, "RayMeshIntersector")
-    except Exception:
-        HAS_PYEMBREE = False
+    # trimesh >= 4 substitutes a placeholder for ray_pyembree when the Embree
+    # backend is missing, which re-raises the original import error on any
+    # attribute access but reports __class__ as NoneType so isinstance is safe.
+    HAS_PYEMBREE = isinstance(getattr(trimesh.ray, "ray_pyembree", None), ModuleType)
 except ImportError:
     HAS_TRIMESH = HAS_PYEMBREE = False
 
@@ -78,7 +76,7 @@ def raycast_hemisphere(
     inter = IntCurvesFace_ShapeIntersector()
     try:
         inter.Load(shape, tol_inter)
-    except Exception:
+    except RuntimeError:
         z = np.zeros(shape2d, dtype=np.float32)
         grids = {"occupancy_grid": z.copy(), "distance_grid": z.copy(),
                  "occupancy_grid_opposite": z.copy(), "distance_grid_opposite": z.copy()}
@@ -108,7 +106,7 @@ def raycast_hemisphere(
                 dd = np.linalg.norm(np.array([pt.X(), pt.Y(), pt.Z()]) - center)
                 occ[ei, ai] = 1.0
                 dist[ei, ai] = dd
-            except Exception:
+            except RuntimeError:
                 continue
             if compute_dot and pt is not None and hit_face is not None:
                 try:
@@ -123,7 +121,7 @@ def raycast_hemisphere(
                         if nv.Magnitude() > 0:
                             nv.Normalize()
                             normals[idx] = [nv.X(), nv.Y(), nv.Z()]
-                except Exception:
+                except RuntimeError:
                     pass
 
         if compute_dot and normals is not None:
@@ -207,12 +205,12 @@ class MeshRayCaster:
             shape, linear_deflection, angular_deflection
         )
         self.mesh = trimesh.Trimesh(vertices=self.vertices, faces=self.triangles)
-        try:
+        if HAS_PYEMBREE:
             self.intersector = trimesh.ray.ray_pyembree.RayMeshIntersector(self.mesh)
-        except Exception as exc:
+        else:
             logger.warning(
-                "Embree unavailable (%s); falling back to the pure-Python ray "
-                "caster, which is orders of magnitude slower. Install embreex.", exc
+                "Embree unavailable; falling back to the pure-Python ray caster, "
+                "which is orders of magnitude slower. Install embreex."
             )
             self.intersector = trimesh.ray.ray_triangle.RayMeshIntersector(self.mesh)
 
